@@ -10,6 +10,11 @@ require('../config/passport')(passport)
 
 const auth = require('../middleware/auth');
 
+// const cleanCache  = require('../middleware/emptyCache');
+
+
+
+
 
 /**
  * @swagger
@@ -67,11 +72,29 @@ const auth = require('../middleware/auth');
  */
 router.get('/',async (req,res,next)=>{
   try {
-    const user = await User.findById(req.query.id)
+    
+    //Here we use rediss
+    //redis is used for store a value in cache memory so every time-
+    //this api call it will not connect with database it will first check data is eexits in cache memory oor not
+
+    //do we have any cached data in redis related to this query
+    // const cachedUser = await client.get(req.query.id)
+
+    //if yes,  then respond in the request and return
+    // if(cachedUser){
+    //   console.log("Serving From Cache");
+    //   return res.status(200).json({result:JSON.parse(cachedUser)})
+    // }
+    //if no, we need to respond to req and update our cache to store the data
+    
+    const user = await User.findById(req.query.id).cache({ key: req.query.id });
+
     if(!user){
       return res.status(404).send({message:"user not exits"})
     }
     res.status(200).json({result:user})
+    
+    // client.set(req.query.id,JSON.stringify(user))
   } catch (error) {
     res.status(400).send(error)
   }
